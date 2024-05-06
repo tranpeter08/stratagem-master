@@ -1,152 +1,146 @@
 'use client';
-import Image from 'next/image';
 import styles from './page.module.css';
-import { ReactElement, useEffect, useReducer } from 'react';
-import { keymap, stratagems } from '@/utils';
-import { armed, buzzer, dirAudio } from '@/utils/audio';
-
-import {} from '@chakra-ui/next-js';
-import { Box, ComponentWithAs, Flex, IconProps } from '@chakra-ui/react';
+import {useState, useEffect, useReducer, useRef} from 'react';
+import {keymap} from '@/utils';
+import {Box, Flex, Heading} from '@chakra-ui/react';
 import ArrowIcon from '@/components/ArrowIcon';
+import {getStratagems} from '@/database/StratagemService';
+import type {Stratagem} from '@/utils';
+import Loading from '@/components/Loading';
+import ProgressBar from '@/components/ProgressBar';
+import {inititalState, reducer} from './reducer';
+import FinalScore from '@/components/FinalScore';
+import Instructions from '@/components/Instructions';
 
-type InititalState = {
-  key: string;
-  stratagemIndex: number;
-  codeIndex: number;
-  direction: string;
-  complete: boolean;
-  correct: boolean;
-  end: boolean;
-  score: number;
-  entries: string;
+export type AudioPlayer = {
+  [buzzer: string]: HTMLAudioElement;
+  armed: HTMLAudioElement;
+  u: HTMLAudioElement;
+  d: HTMLAudioElement;
+  l: HTMLAudioElement;
+  r: HTMLAudioElement;
 };
-
-const inititalState: InititalState = {
-  key: '',
-  stratagemIndex: 0,
-  codeIndex: 0,
-  direction: '',
-  complete: false,
-  correct: false,
-  end: false,
-  score: 0,
-  entries: '',
-};
-
-function reducer(state = inititalState, action: any) {
-  switch (action.type) {
-    case 'keyup':
-      const userDir = keymap[action.key];
-      let { codeIndex, stratagemIndex, correct, end, score } = state;
-      let complete = false;
-      let stratagem = stratagems[stratagemIndex];
-      let correctDir = stratagem.code[codeIndex];
-      let entries = '';
-
-      if (userDir === correctDir) {
-        codeIndex += 1;
-        correct = true;
-        entries = state.entries + userDir;
-
-        // handle last code index
-        if (codeIndex === stratagem.code.length) {
-          complete = true;
-          codeIndex = 0;
-          stratagemIndex += 1;
-          score += 1;
-          entries = '';
-        }
-
-        // handle last strategem index
-        if (stratagemIndex === stratagems.length) {
-          stratagemIndex -= 1;
-          end = true;
-        }
-      } else {
-        codeIndex = 0;
-        correct = false;
-        entries = '';
-      }
-
-      return {
-        ...state,
-        key: action.key,
-        codeIndex,
-        stratagemIndex,
-        direction: userDir,
-        correct,
-        complete,
-        end,
-        score,
-        entries,
-      };
-
-    default:
-      return state;
-  }
-}
 
 export default function Home() {
+  const audio = useRef<AudioPlayer | null>(null);
   const [state, dispatch] = useReducer(reducer, inititalState);
-  const currentStratagem = stratagems[state.stratagemIndex];
-  const { direction, complete, correct, score, entries } = state;
+  const {
+    direction,
+    correct,
+    score,
+    images,
+    stratagemIndex,
+    stratagems,
+    loading,
+    start,
+    complete,
+    end,
+  } = state;
 
-  if (direction) {
-    if (complete) {
-      armed.load();
-      armed.play();
-    }
+  const currentStratagem = stratagems[stratagemIndex] as Stratagem;
+  const currentStratagemImg = images[stratagemIndex];
+  const isFinished = stratagemIndex >= stratagems.length || end;
 
+  if (start && direction && audio.current && !isFinished) {
     if (correct) {
-      const dirMedia = dirAudio[direction];
-      dirMedia.load();
-      dirMedia.play();
+      if (complete) {
+        audio.current?.armed.load();
+        audio.current?.armed.play().catch(() => {});
+      }
+
+      if (direction in audio.current) {
+        const dirMedia = audio.current?.[direction];
+        dirMedia?.load();
+        dirMedia?.play().catch(() => {});
+      }
     }
 
     if (!correct) {
-      buzzer.load();
-      buzzer.play();
+      audio.current?.buzzer.load();
+      audio.current?.buzzer.play().catch(() => {});
     }
   }
 
   const codeIcons = [];
 
-  for (let i = 0; i < currentStratagem.code.length; i++) {
-    let direction = currentStratagem.code[i];
-    codeIcons.push(
-      <ArrowIcon
-        key={currentStratagem.title + '-' + direction}
-        direction={direction}
-        style={i < state.codeIndex ? 'c' : ''}
-      />
-    );
+  if (currentStratagem) {
+    for (let i = 0; i < currentStratagem.code.length; i++) {
+      let direction = currentStratagem.code[i];
+      codeIcons.push(
+        <ArrowIcon
+          key={currentStratagem.name + '-' + i}
+          direction={direction}
+          style={i < state.codeIndex ? 'c' : ''}
+        />
+      );
+    }
+  }
+
+  function handleStart() {
+    dispatch({type: 'toggle-start'});
+  }
+
+  async function getStratagemData() {
+    try {
+      const d = await getStratagems();
+      dispatch({type: 'stratagems', stratagems: d.data as Stratagem[]});
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  function handleReset() {
+    getStratagemData();
   }
 
   useEffect(() => {
+    audio.current = {
+      u: new Audio('/media/up.m4a'),
+      d: new Audio('/media/down.m4a'),
+      l: new Audio('/media/left.m4a'),
+      r: new Audio('/media/right.m4a'),
+      buzzer: new Audio('/media/buzzer.m4a'),
+      armed: new Audio('/media/armed.m4a'),
+    };
+
     function handleKeypress(e: KeyboardEvent) {
       const key = e.key.toLowerCase();
 
       if (key in keymap) {
-        dispatch({ type: 'keyup', key: key });
+        dispatch({type: 'keyup', key: key});
       }
     }
 
     document.addEventListener('keyup', handleKeypress);
+    getStratagemData();
 
     return () => {
       document.removeEventListener('keyup', handleKeypress);
     };
-  }, [dispatch]);
+  }, []);
 
   return (
     <main className={styles.main}>
-      <p>Stratagem: {currentStratagem.title}</p>
-      <p>Code: </p>
-      <Flex gap={2}>{codeIcons}</Flex>
-      <p>You pressed: {state.key}</p>
-      <p>entry: {entries}</p>
-      <p>Score: {score}</p>
-      <p>{state.end && 'END!!!!'}</p>
+      <Flex flexDirection="column" alignItems="center" p={8}>
+        {loading && <Loading />}
+        {!loading && !start && <Instructions handleStart={handleStart} />}
+        {!loading && start && !isFinished && (
+          <Flex flexDir="column" alignItems="center" gap={4}>
+            <Heading as="h1" size="md">
+              {currentStratagem.name}
+            </Heading>
+            <Box h="70px">{currentStratagemImg}</Box>
+            <Flex gap={2} height="28px">
+              {codeIcons}
+            </Flex>
+            <ProgressBar dispatch={dispatch} />
+            <p>Score: {score}</p>
+          </Flex>
+        )}
+        {!loading && isFinished && (
+          <FinalScore score={score} handleReset={handleReset} />
+        )}
+      </Flex>
     </main>
   );
 }
