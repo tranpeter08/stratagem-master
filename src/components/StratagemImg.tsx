@@ -13,6 +13,7 @@ export default function StratagemImg({imgData}: {imgData: StratagemImgData}) {
       height={67}
       alt={imgData.name}
       title={imgData.name}
+      priority={true}
     />
   );
 }
