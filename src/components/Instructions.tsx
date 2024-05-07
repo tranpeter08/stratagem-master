@@ -1,7 +1,24 @@
-import {Flex, Heading, Text, Kbd, Button, Box} from '@chakra-ui/react';
-import {useEffect, useRef, useState} from 'react';
+import {
+  Flex,
+  Heading,
+  Text,
+  Kbd,
+  Button,
+  Box,
+  FormLabel,
+  Switch,
+} from '@chakra-ui/react';
+import {useEffect, useRef} from 'react';
 
-export default function Instructions({handleStart}: {handleStart: () => void}) {
+export default function Instructions({
+  handleStart,
+  toggleControls,
+  showControls,
+}: {
+  handleStart: () => void;
+  toggleControls: () => void;
+  showControls: boolean;
+}) {
   const startAudio = useRef<HTMLAudioElement | null>(null);
 
   function handleClick() {
@@ -18,7 +35,7 @@ export default function Instructions({handleStart}: {handleStart: () => void}) {
   }, []);
 
   return (
-    <Flex flexDirection={'column'} alignItems="center" width={320}>
+    <Flex flexDirection={'column'} width={320}>
       <Heading as="h1" textAlign="center">
         Instructions
       </Heading>
@@ -46,6 +63,23 @@ export default function Instructions({handleStart}: {handleStart: () => void}) {
         <Text>
           Right = <Kbd>D</Kbd> or <Kbd>→</Kbd>
         </Text>
+      </Box>
+      <Box mt={8}>
+        <Heading as="h2" size="md" textDecoration="underline">
+          Options:
+        </Heading>
+        <Flex alignItems="start">
+          <FormLabel p={0} htmlFor="showControls" fontWeight="400">
+            Show Onscreen Keypad
+          </FormLabel>
+          <Switch
+            id="showControls"
+            isChecked={showControls}
+            onChange={() => {
+              toggleControls();
+            }}
+          />
+        </Flex>
       </Box>
       <Flex placeContent="center" mt={8}>
         <Button width="80px" colorScheme="blue" onClick={handleClick}>

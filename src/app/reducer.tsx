@@ -16,6 +16,7 @@ type InititalState = {
   images: JSX.Element[];
   loading: boolean;
   start: boolean;
+  showControls: boolean;
 };
 
 export const inititalState: InititalState = {
@@ -32,10 +33,13 @@ export const inititalState: InititalState = {
   images: [],
   loading: true,
   start: false,
+  showControls: false,
 };
 
 export function reducer(state: InititalState, action: any) {
   switch (action.type) {
+    case 'toggle-controls':
+      return {...state, showControls: !state.showControls};
     case 'toggle-start':
       return {...state, start: true};
 

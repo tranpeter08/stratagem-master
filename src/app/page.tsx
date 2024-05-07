@@ -2,7 +2,7 @@
 import styles from './page.module.css';
 import {useState, useEffect, useReducer, useRef} from 'react';
 import {keymap} from '@/utils';
-import {Box, Flex, Heading} from '@chakra-ui/react';
+import {Box, Flex, Heading, Text} from '@chakra-ui/react';
 import ArrowIcon from '@/components/ArrowIcon';
 import {getStratagems} from '@/database/StratagemService';
 import type {Stratagem} from '@/utils';
@@ -11,6 +11,7 @@ import ProgressBar from '@/components/ProgressBar';
 import {inititalState, reducer} from './reducer';
 import FinalScore from '@/components/FinalScore';
 import Instructions from '@/components/Instructions';
+import MobileControls from '@/components/MobileControls';
 
 export type AudioPlayer = {
   [buzzer: string]: HTMLAudioElement;
@@ -35,6 +36,7 @@ export default function Home() {
     start,
     complete,
     end,
+    showControls,
   } = state;
 
   const currentStratagem = stratagems[stratagemIndex] as Stratagem;
@@ -76,6 +78,10 @@ export default function Home() {
     }
   }
 
+  function toggleControls() {
+    dispatch({type: 'toggle-controls'});
+  }
+
   function handleStart() {
     dispatch({type: 'toggle-start'});
   }
@@ -86,6 +92,12 @@ export default function Home() {
       dispatch({type: 'stratagems', stratagems: d.data as Stratagem[]});
     } catch (error) {
       console.log(error);
+    }
+  }
+
+  function handleKeyPadPress(direction: string) {
+    if (direction in keymap) {
+      dispatch({type: 'keyup', key: direction});
     }
   }
 
@@ -121,12 +133,18 @@ export default function Home() {
 
   return (
     <main className={styles.main}>
-      <Flex flexDirection="column" alignItems="center" p={8}>
+      <Flex flexDirection="column" alignItems="center" p={8} h="100vh" gap={4}>
         {loading && <Loading />}
-        {!loading && !start && <Instructions handleStart={handleStart} />}
+        {!loading && !start && (
+          <Instructions
+            handleStart={handleStart}
+            toggleControls={toggleControls}
+            showControls={showControls}
+          />
+        )}
         {!loading && start && !isFinished && (
-          <Flex flexDir="column" alignItems="center" gap={4}>
-            <Heading as="h1" size="md">
+          <>
+            <Heading as="h1" size="lg">
               {currentStratagem.name}
             </Heading>
             <Box h="70px">{currentStratagemImg}</Box>
@@ -134,8 +152,13 @@ export default function Home() {
               {codeIcons}
             </Flex>
             <ProgressBar dispatch={dispatch} />
-            <p>Score: {score}</p>
-          </Flex>
+            <Text>Score: {score}</Text>
+            {showControls && (
+              <Box mt={'auto'} mb={4}>
+                <MobileControls handleKeyPadPress={handleKeyPadPress} />
+              </Box>
+            )}
+          </>
         )}
         {!loading && isFinished && (
           <FinalScore score={score} handleReset={handleReset} />

@@ -51,7 +51,7 @@ export default function FinalScore({
       </CircularProgress>
 
       <Button
-        isLoading={isindeterminate}
+        isDisabled={isindeterminate}
         colorScheme="blue"
         w={36}
         mt={4}
