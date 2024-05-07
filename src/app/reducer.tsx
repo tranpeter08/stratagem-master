@@ -44,7 +44,11 @@ export function reducer(state: InititalState, action: any) {
       return {...state, start: true};
 
     case 'reset':
-      return {...inititalState, loading: false};
+      return {
+        ...inititalState,
+        loading: false,
+        showControls: state.showControls,
+      };
 
     case 'timesup':
       return {...state, end: true};
@@ -65,6 +69,7 @@ export function reducer(state: InititalState, action: any) {
         images: imgList,
         loading: false,
         end: false,
+        showControls: state.showControls,
       };
 
     case 'keyup':

@@ -144,7 +144,7 @@ export default function Home() {
         )}
         {!loading && start && !isFinished && (
           <>
-            <Heading as="h1" size="lg">
+            <Heading as="h1" size="md">
               {currentStratagem.name}
             </Heading>
             <Box h="70px">{currentStratagemImg}</Box>
@@ -154,7 +154,7 @@ export default function Home() {
             <ProgressBar dispatch={dispatch} />
             <Text>Score: {score}</Text>
             {showControls && (
-              <Box mt={'auto'} mb={4}>
+              <Box mt={8} mb={4}>
                 <MobileControls handleKeyPadPress={handleKeyPadPress} />
               </Box>
             )}
